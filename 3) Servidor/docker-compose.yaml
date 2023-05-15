@@ -1,0 +1,58 @@
+version: '3'
+services:
+  # Django Server
+  backend:
+   container_name: django
+   build: .
+  #  privileged: true
+   volumes:
+    - .:/app
+   ports:
+    - 8000:8000
+   depends_on:
+    - db
+    - redis
+    - mqtt
+  
+  # PostgreSQL Database
+  db:
+   image: postgres
+   container_name: postgresql
+   restart: always
+   environment:
+      POSTGRES_DB: solopython_db
+      POSTGRES_USER: solopython
+      POSTGRES_PASSWORD: postgres
+   ports:
+    - 5432:5432
+   volumes:
+      - .dbdata:/var/lib/postgresql
+
+  # DHT11 Sensor Consumer
+  dht11_sensor:
+    container_name: dht11_sensor
+    build: .
+    privileged: true
+    command: >
+      sh -c "python DHT11consumer.py"
+    depends_on:
+      - backend
+  
+  # Redis Cache
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - 6379:6379
+  
+  # MQTT Broker
+  mqtt:
+    image: eclipse-mosquitto
+    container_name: mqtt
+    ports:
+      - 1883:1883
+      - 9001:9001
+    volumes:
+      - ./mosquitto:/mosquitto
+
+  
